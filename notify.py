@@ -2,11 +2,11 @@ import http.client, urllib
 import send_email
 
 
-def push_notification(text):
+def push_notification(text, api_token):
     conn = http.client.HTTPSConnection("api.pushover.net:443")
     conn.request("POST", "/1/messages.json",
      urllib.parse.urlencode({
-         "token": "a39tanxri2suyfdxczuzupt5yg5zmy",
+         "token": api_token,
          "user": "uvieox1v1tdsubdnmipw4igx1u65xj",
          "message": text,
          "html": 1,
