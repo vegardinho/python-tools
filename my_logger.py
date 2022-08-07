@@ -7,11 +7,11 @@ from logging.handlers import TimedRotatingFileHandler
 class ColoredFormatter(Formatter):
 
     MAPPING = {
-        'DEBUG'   : 37, # white
-        'INFO'    : 36, # cyan
+        'DEBUG'   : 37, # grey
+        'INFO'    : 32, # green
         'WARNING' : 33, # yellow
         'ERROR'   : 31, # red
-        'CRITICAL': "1;31", # bold red
+        'CRITICAL': 41, # white, red fill
     }
 
     PREFIX = '\033['
@@ -32,42 +32,42 @@ class ColoredFormatter(Formatter):
 
 class MyLogger:
 
-    FORMAT = "%(asctime)s %(filename)s [%(levelname)s] %(funcName)s:%(lineno)d %(message)s"
+    FORMAT = "%(asctime)s %(filename)s [%(levelname)-17s] %(funcName)s:%(lineno)d %(message)s"
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
     FORMATTER = ColoredFormatter(FORMAT, DATE_FMT)
 
-    # Creates a logger, adds handler for printing to screen, 
-    # plus optional written copy to file "all.log"
-    def __init__(self, logger_name, cre_f_ha=False, cre_sys_h=True, 
-            logger_level="DEBUG", root="./", o_write_all=False, 
-            overwrite=False, f_ha="DEBUG", sys_ha="DEBUG"):
-        self.ROOT = root
-        self.logger_level = getattr(logging, logger_level)
-        self.o_write_all = o_write_all
+    def __init__(self, logger_base_level='DEBUG', logger_name=__name__):
+        """
+        :param logger_base_level:   Handlers only receive logs from this level upwards.
+        :param logger_name:         Name used for storing logger in internal logger hierarchy. Should be exclusive.
+        """
+
+        self.logger_level = getattr(logging, logger_base_level)
 
         self.logger = logging.getLogger(logger_name)
         self.logger.setLevel(self.logger_level)
         self.logger.propagate = False
 
-        if cre_sys_h:
-            self.add_handler(level=sys_ha) 
-        if cre_f_ha:
-            self.add_handler(overwrite=overwrite, level=f_ha, filename="all.log")
 
-    # Add handlers, for either writing to file or screen
-    def add_handler(self, level="NOTSET", filename=None, 
-            overwrite=False):
+    # Add handler for logging to std.out or file. If file handler, batch store log files by week.
+    def add_handler(self, level="NOTSET", filename=None, overwrite=False, max_log_files=10):
+        """
+        :param level:           Logging level. Defaults to self.logger level.
+        :param filename:        If provided, add filehandler with filename, else add streamhandler.
+        :param overwrite:       Wether to overwrite log file on run.
+        :param max_log_files    Maximum number of weekly log files to keep.
+        :return:                MyLogger object.
+        """
         if filename == None:
             handler = logging.StreamHandler(sys.stdout)
-        elif overwrite or self.o_write_all:
-            handler = logging.FileHandler(mode="w", filename=self.ROOT + filename)
+        elif overwrite:
+            handler = logging.FileHandler(mode="w", filename=filename)
         else:
-            handler = TimedRotatingFileHandler(self.ROOT + filename, 
-                when='W0')
+            handler = TimedRotatingFileHandler(filename, when='W0', backupCount=max_log_files)
         handler.setFormatter(MyLogger.FORMATTER)
         handler.setLevel(level)
         self.logger.addHandler(handler)
-        return 
+        return self
 
     # Set level on logger-level (may affect handler-level output)
     def set_logger_level(self, new_level):
@@ -76,15 +76,17 @@ class MyLogger:
         return
 
     def retrieve_logger(self):
+        if not self.logger.hasHandlers():
+            raise Exception("Logger has no handler, and will not produce any logs. Please add at least one handler.")
         return self.logger
 
 
-# test use case:
-#
-# logObj = MyLogger("test", logger_level="WARNING")
-# mlog = logObj.retrieve_logger()
-# mlog.debug("hei")
-# mlog.info("hei")
-# mlog.warning("hei")
-# mlog.error("hei")
-# mlog.critical("hei")
+# Test use case:
+if __name__ == '__main__':
+    mlog = MyLogger(logger_base_level="DEBUG").add_handler(level="DEBUG").retrieve_logger()
+
+    mlog.debug("hei")
+    mlog.info("hei")
+    mlog.warning("hei")
+    mlog.error("hei")
+    mlog.critical("hei")
