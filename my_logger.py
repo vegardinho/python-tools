@@ -8,7 +8,7 @@ class ColoredFormatter(Formatter):
 
     MAPPING = {
         'DEBUG'   : 37, # grey
-        'INFO'    : 32, # green
+        'INFO'    : 36, # cyan
         'WARNING' : 33, # yellow
         'ERROR'   : 31, # red
         'CRITICAL': 41, # white, red fill
@@ -32,7 +32,7 @@ class ColoredFormatter(Formatter):
 
 class MyLogger:
 
-    FORMAT = "%(asctime)s %(filename)s [%(levelname)-17s] %(funcName)s:%(lineno)d %(message)s"
+    FORMAT = '%(asctime)s %(filename)s [%(levelname)s] %(funcName)s:%(lineno)-6s %(message)s'
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
     FORMATTER = ColoredFormatter(FORMAT, DATE_FMT)
 
@@ -83,10 +83,10 @@ class MyLogger:
 
 # Test use case:
 if __name__ == '__main__':
-    mlog = MyLogger(logger_base_level="DEBUG").add_handler(level="DEBUG").retrieve_logger()
+    log = MyLogger(logger_base_level="DEBUG").add_handler(level="DEBUG").retrieve_logger()
 
-    mlog.debug("hei")
-    mlog.info("hei")
-    mlog.warning("hei")
-    mlog.error("hei")
-    mlog.critical("hei")
+    log.debug("hei")
+    log.info("hei")
+    log.warning("hei")
+    log.error("hei")
+    log.critical("hei")
