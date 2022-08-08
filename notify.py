@@ -2,14 +2,14 @@ import http.client, urllib
 import send_email
 
 
-def push_notification(text, api_token):
+def push_notification(text, pushover_token):
     conn = http.client.HTTPSConnection("api.pushover.net:443")
     conn.request("POST", "/1/messages.json",
      urllib.parse.urlencode({
-         "token": api_token,
+         "token": pushover_token,
          "user": "uvieox1v1tdsubdnmipw4igx1u65xj",
          "message": text,
-         "html": 1,
+         "html": 1, #Enable html formatting
      }), {"Content-type": "application/x-www-form-urlencoded"})
     conn.getresponse()
 
