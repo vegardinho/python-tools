@@ -12,7 +12,7 @@ BROWSER = ms.StatefulBrowser()
 def scrape_site(get_elmnts_func, get_attrs_func, get_next_page_func, site_name, out_string_format, elmnts_out_file='./in_out/elements.out',
                 history_file='./in_out/history.txt', searches_file='./in_out/searches.in', max_pages=15,
                 email='landsverk.vegard@gmail.com', max_notifi_entries=4, push_notification=True, pushover_token=None,
-                email_notification=False):
+                email_notification=False, email_exceptions=True):
     """
     :param get_elmnts_func:     Takes mechanicalsoup object, and returns iterable mechanicalsoup object
                                 of all desired html elements.
@@ -20,7 +20,7 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_page_func, site_name, 
     :param get_attrs_func:      Takes (mechanicalsoup html element, dict of elements, and search object
                                 returned by i_o_setup, and returns updated dict.
     :type  Function
-    :param get_next_page_func:  Takes mechanicalsoup page object, and returns mechandicalsoup object of
+    :param get_next_page_func:  Takes (mechanicalsoup page object, page_url), and returns mechandicalsoup object of
                                 next page link element in search, or None if no more pages.
     :type  Function
     :param site_name:           Name displayed in title of notification.
@@ -57,8 +57,9 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_page_func, site_name, 
                             output_file=history_file, max_notif_entries=max_notifi_entries,
                             pushover_token=pushover_token)
     except Exception:
-        notify.mail(email, 'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
         traceback.print_exc()
+        if email_exceptions:
+            notify.mail(email, 'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
 
 
 def write_with_timestamp(links, filename):
@@ -187,7 +188,7 @@ def process_page(page_url, elmnts_dict, get_elmnts_func, get_attrs_func, get_nex
     for e in elmnts:
         elmnts_dict = get_attrs_func(e, elmnts_dict, search)
 
-    next_page_url = get_next_page_func(page)
+    next_page_url = get_next_page_func(page, page_url)
     if next_page_url:
         if page_num > max_pages:
             raise Exception(f'Max page limit of {max_pages} reached without reaching end of search. ')
