@@ -58,8 +58,10 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_page_func, site_name, 
                             pushover_token=pushover_token)
     except Exception:
         traceback.print_exc()
-        if email_exceptions:
-            notify.mail(email, 'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
+        # if email_exceptions:
+        #     notify.mail(email, 'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
+        # TODO: Create module that can be called to determine when (since how long?) to send error (aka propagate
+        # error to cronjob) on email.
 
 
 def write_with_timestamp(links, filename):
@@ -163,11 +165,11 @@ def alert_write_new(site, elements, searches, string_format, push_notifications,
     if len(elements) > max_notif_entries:
         notify_text += f'\n... og {len(elements) - max_notif_entries} annonse(r) til.\n'
 
-    short_urls = [pyshorteners.Shortener().tinyurl.short(search['url']) for search in searches]
+    short_urls = [[pyshorteners.Shortener().tinyurl.short(search['url']), search['name']] for search in searches]
     notify_text += f'\n\nLenke til søk:\n'
 
-    for i in range(0, len(short_urls)):
-        notify_text += f'<a href="{short_urls[i]}">\'{elements[i]["search"]["name"]}\'</a>\n'
+    for (url, name) in short_urls:
+        notify_text += f'<a href="{url}">\'{name}\'</a>\n'
 
     notify_text += f'\nVennlig hilsen,\n{site}-roboten'
 
