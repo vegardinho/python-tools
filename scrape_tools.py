@@ -130,7 +130,7 @@ def i_o_setup(elements_file, history_file, search_file):
 
         try:
             while search != []:
-                search = {'url': search[0], 'name': search[1]}
+                search = {'url': search[0], 'name': ' '.join(search[1:])}
                 search_dict.append(search)
 
                 search = fp.readline().strip('\n').split()
