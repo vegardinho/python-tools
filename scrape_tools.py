@@ -5,14 +5,15 @@ import notify
 import arrow
 import mechanicalsoup as ms
 import traceback
+import requests
 
 BROWSER = ms.StatefulBrowser()
 
 
-def scrape_site(get_elmnts_func, get_attrs_func, get_next_page_func, site_name, out_string_format, elmnts_out_file='./in_out/elements.out',
+def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, out_string_format, elmnts_out_file='./in_out/elements.out',
                 history_file='./in_out/history.txt', searches_file='./in_out/searches.in', max_pages=15,
                 email='landsverk.vegard@gmail.com', max_notifi_entries=4, push_notification=True, pushover_token=None,
-                email_notification=False, email_exceptions=True):
+                email_notification=False, email_exceptions=True, json_request=False):
     """
     :param get_elmnts_func:     Takes mechanicalsoup object, and returns iterable mechanicalsoup object
                                 of all desired html elements.
@@ -20,7 +21,7 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_page_func, site_name, 
     :param get_attrs_func:      Takes (mechanicalsoup html element, dict of elements, and search object
                                 returned by i_o_setup, and returns updated dict.
     :type  Function
-    :param get_next_page_func:  Takes (mechanicalsoup page object, page_url), and returns mechandicalsoup object of
+    :param get_next_url_func:  Takes (mechanicalsoup page object, page_url), and returns mechandicalsoup object of
                                 next page link element in search, or None if no more pages.
     :type  Function
     :param site_name:           Name displayed in title of notification.
@@ -50,7 +51,8 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_page_func, site_name, 
 
     try:
         searches = i_o_setup(elmnts_out_file, history_file, searches_file)
-        new_elmnts = get_ids(searches, elmnts_out_file, get_elmnts_func, get_attrs_func, get_next_page_func, max_pages)
+        new_elmnts = get_ids(searches, elmnts_out_file, get_elmnts_func, get_attrs_func, get_next_url_func, max_pages,
+                             json_request)
         if new_elmnts:
             alert_write_new(site_name, new_elmnts, searches, out_string_format,
                             push_notifications=push_notification, email_notifications=email_notification,
@@ -69,12 +71,13 @@ def write_with_timestamp(links, filename):
     with open(filename, 'a') as fp:
         fp.write(f'{timestamp}{links}\n\n')
 
-def get_ids(searches, elmnts_out_file, get_elmnts_func, get_attrs_func, get_next_page_func, max_pages):
+def get_ids(searches, elmnts_out_file, get_elmnts_func, get_attrs_func, get_next_url_func, max_pages,
+            json_request=False):
     cur_elements = {}
 
     for search in searches:
         cur_elements = process_page(search['url'], cur_elements, get_elmnts_func, get_attrs_func,
-                               get_next_page_func, search, max_pages, page_num=1)
+                               get_next_url_func, search, max_pages, page_num=1, json_request=json_request)
 
                                # , cur_elements, search, 1)
 
@@ -183,19 +186,23 @@ def alert_write_new(site, elements, searches, string_format, push_notifications,
         write_with_timestamp(archive_links, output_file)
 
 
-def process_page(page_url, elmnts_dict, get_elmnts_func, get_attrs_func, get_next_page_func, search, max_pages, page_num):
-    page = BROWSER.get(page_url).soup
+def process_page(page_url, elmnts_dict, get_elmnts_func, get_attrs_func, get_next_url_func, search, max_pages,
+                 page_num, json_request=False):
+    if json_request:
+        page = requests.get(page_url).json()
+    else:
+        page = BROWSER.get(page_url).soup
     elmnts = get_elmnts_func(page)
 
     for e in elmnts:
         elmnts_dict = get_attrs_func(e, elmnts_dict, search)
 
-    next_page_url = get_next_page_func(page, page_url)
+    next_page_url = get_next_url_func(page, page_url)
     if next_page_url:
         if page_num > max_pages:
             raise Exception(f'Max page limit of {max_pages} reached without reaching end of search. ')
         page_num += 1
         process_page(next_page_url, elmnts_dict, get_elmnts_func,
-                     get_attrs_func, get_next_page_func, search, max_pages, page_num)
+                     get_attrs_func, get_next_url_func, search, max_pages, page_num, json_request=True)
 
     return elmnts_dict
