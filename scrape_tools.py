@@ -8,6 +8,7 @@ import traceback
 import requests
 
 BROWSER = ms.StatefulBrowser()
+BROWSER.set_user_agent('Mozilla/5.0')
 
 
 def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, out_string_format, elmnts_out_file='./in_out/elements.out',
