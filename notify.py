@@ -14,9 +14,9 @@ def push_notification(text, pushover_token):
     conn.getresponse()
 
 
-def mail(recipient, subj, text):
+def mail(recipient, subj, text, files=None):
     send_email.send_email("landsverk.vegard@gmail.com", recipient,
-                          "Gmail - epostskript (gcal)", subj, text)
+                          "Gmail - epostskript (gcal)", subj, text, files)
 
 
 if __name__ == '__main__':

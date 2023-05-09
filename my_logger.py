@@ -4,6 +4,8 @@ import sys
 from copy import copy
 from logging.handlers import TimedRotatingFileHandler
 
+from i_o_utilities import create_files
+
 class ColoredFormatter(Formatter):
 
     MAPPING = {
@@ -58,12 +60,15 @@ class MyLogger:
         :param max_log_files    Maximum number of weekly log files to keep.
         :return:                MyLogger object.
         """
-        if filename == None:
-            handler = logging.StreamHandler(sys.stdout)
-        elif overwrite:
-            handler = logging.FileHandler(mode="w", filename=filename)
+        if filename:
+            create_files(filename)
+            if overwrite:
+                handler = logging.FileHandler(mode="w", filename=filename)
+            else:
+                handler = TimedRotatingFileHandler(filename, when='W0', backupCount=max_log_files)
         else:
-            handler = TimedRotatingFileHandler(filename, when='W0', backupCount=max_log_files)
+            handler = logging.StreamHandler(sys.stdout)
+
         handler.setFormatter(MyLogger.FORMATTER)
         handler.setLevel(level)
         self.logger.addHandler(handler)
