@@ -74,7 +74,10 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, o
                             pushover_token=pushover_token)
         email_errors(None, None)
     except Exception:
-        logger.error(traceback.print_exc())
+        try:
+            logger.error(traceback.print_exc())
+        except Exception:
+            print("Logger not functioning")
 
         if email_exceptions:
             email_errors(traceback.print_exc(), email)
