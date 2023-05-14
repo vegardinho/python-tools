@@ -14,7 +14,7 @@ BROWSER.set_user_agent('Mozilla/5.0')
 def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, out_string_format, elmnts_out_file='./in_out/elements.out',
                 history_file='./in_out/history.txt', searches_file='./in_out/searches.in', max_pages=15,
                 email='landsverk.vegard@gmail.com', max_notifi_entries=4, push_notification=True, pushover_token=None,
-                email_notification=False, email_exceptions=True, json_request=False):
+                pushover_key=None, email_notification=False, email_exceptions=True, json_request=False):
     """
     :param get_elmnts_func:     Takes mechanicalsoup object, and returns iterable mechanicalsoup object
                                 of all desired html elements.
@@ -58,7 +58,7 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, o
             alert_write_new(site_name, new_elmnts, searches, out_string_format,
                             push_notifications=push_notification, email_notifications=email_notification,
                             output_file=history_file, max_notif_entries=max_notifi_entries,
-                            pushover_token=pushover_token)
+                            pushover_token=pushover_token, pushover_key=pushover_key)
     except Exception:
         traceback.print_exc()
         # if email_exceptions:
@@ -144,7 +144,7 @@ def i_o_setup(elements_file, history_file, search_file):
 
 # Send push notification for maximum max_notif_entries, and store all links in archive file
 def alert_write_new(site, elements, searches, string_format, push_notifications, email_notifications,
-                    max_notif_entries, pushover_token=None, output_file='history.txt'):
+                    max_notif_entries, pushover_token, pushover_key, output_file='history.txt'):
     subj = f'Nye treff på {site}-søket ditt'
     notify_text = f'Det er blitt lagt til {len(elements)} nye annonse(r) på {site}-søket ditt.\n\n'
 
@@ -178,7 +178,7 @@ def alert_write_new(site, elements, searches, string_format, push_notifications,
     if push_notifications:
         if not pushover_token:
             raise Exception("Pushover api token required")
-        notify.push_notification(notify_text, pushover_token)
+        notify.push_notification(notify_text, pushover_token, pushover_key)
     if email_notifications:
         notify.mail(EMAIL, subj, notify_text)
     if output_file:
