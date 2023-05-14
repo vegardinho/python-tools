@@ -131,15 +131,13 @@ def i_o_setup(elements_file, history_file, search_file):
         search = fp.readline().strip('\n').split()
         if len(search) == 0:
             raise Exception('Please add url to search url file')
-
-        try:
-            while search != []:
-                search = {'url': search[0], 'name': ' '.join(search[1:])}
-                search_dict.append(search)
-
-                search = fp.readline().strip('\n').split()
-        except IndexError:
+        elif len(search) == 1:
             raise Exception(f'Please enter name of search in search url file "{search_file}"')
+
+        while search != []:
+            search = {'url': search[0], 'name': ' '.join(search[1:])}
+            search_dict.append(search)
+            search = fp.readline().strip('\n').split()
 
     return search_dict
 
