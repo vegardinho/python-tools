@@ -85,18 +85,18 @@ def get_ids(searches, elmnts_out_file, get_elmnts_func, get_attrs_func, get_next
     new_elements = compare_results(elmnts_out_file, cur_elements)
     return new_elements
 
-def compare_results(FILE_NAME, cur_elements):
+def compare_results(I_O_FILE, cur_elements):
     prev_elements = {}
-    with open(FILE_NAME, 'r+') as fp:
+    with open(I_O_FILE, 'r+') as fp:
         if fp.read() != "":
             fp.seek(0)
             try:
                 prev_elements = json.load(fp)
             except Exception as e:
-                os.remove(FILE_NAME)
+                os.remove(I_O_FILE)
                 raise IOError('Could not read json. Deleting file.') from e
 
-    with open(FILE_NAME, 'w+') as fp:
+    with open(I_O_FILE, 'w+') as fp:
         json.dump(cur_elements, fp)
 
     # Alert if new elements added (mere difference could be due to deletion)
