@@ -204,6 +204,6 @@ def process_page(page_url, elmnts_dict, get_elmnts_func, get_attrs_func, get_nex
             raise Exception(f'Max page limit of {max_pages} reached without reaching end of search. ')
         page_num += 1
         process_page(next_page_url, elmnts_dict, get_elmnts_func,
-                     get_attrs_func, get_next_url_func, search, max_pages, page_num, json_request=True)
+                     get_attrs_func, get_next_url_func, search, max_pages, page_num, json_request)
 
     return elmnts_dict
