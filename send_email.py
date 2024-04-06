@@ -4,7 +4,7 @@ from os.path import basename
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-
+import os
 
 
 def send_email(sender_email, receiver_email, keychain_name, subject, text, *files):
@@ -23,8 +23,8 @@ def send_email(sender_email, receiver_email, keychain_name, subject, text, *file
     # message.attach(plain_text)
     message.attach(MIMEText(text))
 
-    # TODO: fix relative paths and tilde expansion
     for f in files or []:
+        f = os.path.expanduser(f)
         with open(f, "rb") as fil:
             part = MIMEApplication(
                 fil.read(),
@@ -45,7 +45,9 @@ def send_email(sender_email, receiver_email, keychain_name, subject, text, *file
 if __name__ == '__main__':
     text = """Hei,
 	Her var det jaggu no tekst, ja"
+	
 
 	Snakkas!"""
     sub = "Hilsen fra Mons"
-    send_email("landsverk.vegard@gmail.com", "webansvarlig@skienok.no", "Gmail - epostskript (gcal)", sub, text)
+    send_email("landsverk.vegard@gmail.com", "webansvarlig@skienok.no",
+               "Gmail - epostskript (gcal)", sub, text, './testfil.txt')
