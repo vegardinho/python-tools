@@ -6,14 +6,14 @@ from logging.handlers import TimedRotatingFileHandler
 
 from i_o_utilities import create_files
 
-class ColoredFormatter(Formatter):
 
+class ColoredFormatter(Formatter):
     MAPPING = {
-        'DEBUG'   : 37, # grey
-        'INFO'    : 36, # cyan
-        'WARNING' : 33, # yellow
-        'ERROR'   : 31, # red
-        'CRITICAL': 41, # white, red fill
+        'DEBUG': 37,  # grey
+        'INFO': 36,  # cyan
+        'WARNING': 33,  # yellow
+        'ERROR': 31,  # red
+        'CRITICAL': 41,  # white, red fill
     }
 
     PREFIX = '\033['
@@ -25,7 +25,7 @@ class ColoredFormatter(Formatter):
     def format(self, record):
         colored_record = copy(record)
         levelname = colored_record.levelname
-        seq = ColoredFormatter.MAPPING.get(levelname, 37) # default white
+        seq = ColoredFormatter.MAPPING.get(levelname, 37)  # default white
         colored_levelname = ('{0}{1}m{2}{3}') \
             .format(ColoredFormatter.PREFIX, seq, levelname, ColoredFormatter.SUFFIX)
         colored_record.levelname = colored_levelname
@@ -33,7 +33,6 @@ class ColoredFormatter(Formatter):
 
 
 class MyLogger:
-
     FORMAT = '%(asctime)s %(filename)s [%(levelname)s] %(funcName)s:%(lineno)-6s %(message)s'
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
     FORMATTER = ColoredFormatter(FORMAT, DATE_FMT)
@@ -49,7 +48,6 @@ class MyLogger:
         self.logger = logging.getLogger(logger_name)
         self.logger.setLevel(self.logger_level)
         self.logger.propagate = False
-
 
     # Add handler for logging to std.out or file. If file handler, batch store log files by week.
     def add_handler(self, level="NOTSET", filename=None, overwrite=False, max_log_files=10):
