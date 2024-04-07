@@ -21,9 +21,9 @@ BROWSER.set_user_agent('Mozilla/5.0')
 
 def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, out_string_format,
                 elmnts_out_file=DEFAULT_ELEMENTS_OUT_FILE, history_file=DEFAULT_HISTORY_FILE,
-                searches_file=DEFAULT_SEARCHES_FILE, log_file=DEFAULT_LOG_FILE, max_pages=15, email=DEFAULT_EMAIL, max_notifi_entries=4,
-                push_notification=True, pushover_token=None, email_notification=False, email_exceptions=True,
-                json_request=False):
+                searches_file=DEFAULT_SEARCHES_FILE, log_file=DEFAULT_LOG_FILE, max_pages=15, email=DEFAULT_EMAIL,
+                max_notifi_entries=4, push_notification=True, pushover_token=None, email_notification=False,
+                email_exceptions=True, json_request=False):
     """
     :param get_elmnts_func:     Takes mechanicalsoup object, and returns iterable of mechanicalsoup objects (all
                                 desired html elements).
