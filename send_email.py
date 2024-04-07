@@ -7,7 +7,8 @@ from email.mime.application import MIMEApplication
 import os
 
 
-def send_email(sender_email, receiver_email, keychain_name, subject, text, *files):
+def send_email(receiver_email, subject, text, *files, sender_email="landsverk.vegard@gmail.com",
+               keychain_name="Gmail - epostskript (gcal)"):
     port = 465  # For SSL
     smtp_server = "smtp.gmail.com"
     password = keyring.get_password(keychain_name, sender_email)
@@ -49,5 +50,4 @@ if __name__ == '__main__':
 
 	Snakkas!"""
     sub = "Hilsen fra Mons"
-    send_email("landsverk.vegard@gmail.com", "webansvarlig@skienok.no",
-               "Gmail - epostskript (gcal)", sub, text, './testfil.txt')
+    send_email("webansvarlig@skienok.no", sub, text, '~/Downloads/unnamed.png')
