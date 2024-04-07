@@ -14,6 +14,7 @@ SEND_INTERVALS = [0, 1, 2, 4, 7, 15]
 FALLBACK_INTERVAL = 15
 NOW = arrow.now()
 
+
 def email_errors(exception, email, history_file='error_email.out', logger=None, log_file=None):
     log_file_path = os.path.abspath(log_file) if log_file else None
     log = logger
@@ -23,7 +24,6 @@ def email_errors(exception, email, history_file='error_email.out', logger=None, 
     log.info("Checking for sent errors.")
     create_files(history_file)
 
-
     # TODO: What parameters does other scripts call this script with? What about exception parameter?
 
     log.info("Opening history file.")
@@ -31,12 +31,12 @@ def email_errors(exception, email, history_file='error_email.out', logger=None, 
         fp_content = fp.read()
         fp.seek(0)
 
-        days_since_send = 0 
+        days_since_send = 0
 
         log.info("Reading history")
         if fp_content == '':
             log.debug("Empty history file --> assume never sent error message. Create dict.")
-            dates = {"error":[], "error_sent":[]} 
+            dates = {"error": [], "error_sent": []}
         else:
             log.debug("Not empty send-file")
             dates = json.loads(fp_content)
@@ -44,8 +44,8 @@ def email_errors(exception, email, history_file='error_email.out', logger=None, 
             days_since_send = (NOW - last_send_date).days
         log.info("History read.")
 
-        dates["error"].append(NOW.format()) 
-    
+        dates["error"].append(NOW.format())
+
         next_send_limit = FALLBACK_INTERVAL
         num_sent = len(dates["error_sent"])
         if num_sent < len(SEND_INTERVALS):
@@ -64,13 +64,13 @@ def email_errors(exception, email, history_file='error_email.out', logger=None, 
                 fp.seek(0)
                 fp.write('')
                 fp.close()
-
                 exit(1)
             log.info("Email sent. Appending to list.")
-            dates["error_sent"].append(NOW.format()) 
+            dates["error_sent"].append(NOW.format())
         fp.seek(0)
         log.info("Dumping updated dates to json")
         json.dump(dates, fp)
+
 
 if __name__ == '__main__':
     # Test use case
