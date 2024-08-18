@@ -8,17 +8,15 @@ os_syst = platform.system()
 if os_syst == 'Darwin':
     import keyring
 
-PWD_PATH = ".gmail_pwd"
-
 def send_email(receiver_email, subject, text, *files, sender_email="landsverk.vegard@gmail.com",
-               keychain_name="Gmail - epostskript (gcal)"):
+               keychain_name="Gmail - epostskript (gcal)", pwd_path=".gmail_pwd"):
     port = 465  # For SSL
     smtp_server = "smtp.gmail.com"
 
     if os_syst == 'Darwin': # Macos
         password = keyring.get_password(keychain_name, sender_email)
     elif os_syst == 'Linux':
-        with open(PWD_PATH, "r") as file:
+        with open(pwd_path, "r") as file:
             password = file.read()
     else:
         raise Exception("PasswordNotExists")
