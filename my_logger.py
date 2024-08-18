@@ -4,14 +4,16 @@ import sys
 from copy import copy
 from logging.handlers import TimedRotatingFileHandler
 
-class ColoredFormatter(Formatter):
+from i_o_utilities import create_files
 
+
+class ColoredFormatter(Formatter):
     MAPPING = {
-        'DEBUG'   : 37, # grey
-        'INFO'    : 36, # cyan
-        'WARNING' : 33, # yellow
-        'ERROR'   : 31, # red
-        'CRITICAL': 41, # white, red fill
+        'DEBUG': 37,  # grey
+        'INFO': 36,  # cyan
+        'WARNING': 33,  # yellow
+        'ERROR': 31,  # red
+        'CRITICAL': 41,  # white, red fill
     }
 
     PREFIX = '\033['
@@ -23,7 +25,7 @@ class ColoredFormatter(Formatter):
     def format(self, record):
         colored_record = copy(record)
         levelname = colored_record.levelname
-        seq = ColoredFormatter.MAPPING.get(levelname, 37) # default white
+        seq = ColoredFormatter.MAPPING.get(levelname, 37)  # default white
         colored_levelname = ('{0}{1}m{2}{3}') \
             .format(ColoredFormatter.PREFIX, seq, levelname, ColoredFormatter.SUFFIX)
         colored_record.levelname = colored_levelname
@@ -31,7 +33,6 @@ class ColoredFormatter(Formatter):
 
 
 class MyLogger:
-
     FORMAT = '%(asctime)s %(filename)s [%(levelname)s] %(funcName)s:%(lineno)-6s %(message)s'
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
     FORMATTER = ColoredFormatter(FORMAT, DATE_FMT)
@@ -48,7 +49,6 @@ class MyLogger:
         self.logger.setLevel(self.logger_level)
         self.logger.propagate = False
 
-
     # Add handler for logging to std.out or file. If file handler, batch store log files by week.
     def add_handler(self, level="NOTSET", filename=None, overwrite=False, max_log_files=10):
         """
@@ -58,12 +58,15 @@ class MyLogger:
         :param max_log_files    Maximum number of weekly log files to keep.
         :return:                MyLogger object.
         """
-        if filename == None:
-            handler = logging.StreamHandler(sys.stdout)
-        elif overwrite:
-            handler = logging.FileHandler(mode="w", filename=filename)
+        if filename:
+            create_files(filename)
+            if overwrite:
+                handler = logging.FileHandler(mode="w", filename=filename)
+            else:
+                handler = TimedRotatingFileHandler(filename, when='W0', backupCount=max_log_files)
         else:
-            handler = TimedRotatingFileHandler(filename, when='W0', backupCount=max_log_files)
+            handler = logging.StreamHandler(sys.stdout)
+
         handler.setFormatter(MyLogger.FORMATTER)
         handler.setLevel(level)
         self.logger.addHandler(handler)

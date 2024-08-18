@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 import pyshorteners
 import notify
 import arrow
@@ -7,27 +6,37 @@ import mechanicalsoup as ms
 import traceback
 import requests
 
+from my_logger import MyLogger
+from i_o_utilities import create_files
+
+DEFAULT_EMAIL = 'landsverk.vegard@gmail.com'
+DEFAULT_HISTORY_FILE = './in_out/history.txt'
+DEFAULT_SEARCHES_FILE = './in_out/searches.in'
+DEFAULT_ELEMENTS_OUT_FILE = './in_out/elements.out'
+DEFAULT_LOG_FILE = './all.log'
+
 BROWSER = ms.StatefulBrowser()
 BROWSER.set_user_agent('Mozilla/5.0')
 
 
-def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, out_string_format, elmnts_out_file='./in_out/elements.out',
-                history_file='./in_out/history.txt', searches_file='./in_out/searches.in', max_pages=15,
-                email='landsverk.vegard@gmail.com', max_notifi_entries=4, push_notification=True, pushover_token=None,
-                pushover_key=None, email_notification=False, email_exceptions=True, json_request=False):
+def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, out_string_format,
+                elmnts_out_file=DEFAULT_ELEMENTS_OUT_FILE, history_file=DEFAULT_HISTORY_FILE,
+                searches_file=DEFAULT_SEARCHES_FILE, log_file=DEFAULT_LOG_FILE, max_pages=15, email=DEFAULT_EMAIL,
+                max_notifi_entries=4, push_notification=True, pushover_token=None, email_notification=False,
+                email_exceptions=True, json_request=False):
     """
-    :param get_elmnts_func:     Takes mechanicalsoup object, and returns iterable mechanicalsoup object
-                                of all desired html elements.
+    :param get_elmnts_func:     Takes mechanicalsoup object, and returns iterable of mechanicalsoup objects (all
+                                desired html elements).
     :type  Function
     :param get_attrs_func:      Takes (mechanicalsoup html element, dict of elements, and search object
-                                returned by i_o_setup, and returns updated dict.
+                                returned by i_o_setup), and returns updated dict.
     :type  Function
-    :param get_next_url_func:  Takes (mechanicalsoup page object, page_url), and returns mechandicalsoup object of
+    :param get_next_url_func:   Takes (mechanicalsoup page object, page_url), and returns mechandicalsoup object of
                                 next page link element in search, or None if no more pages.
     :type  Function
     :param site_name:           Name displayed in title of notification.
     :type  String
-    :param out_string_format:   Takes (html link to element page, search-url, element dict object), and
+    :param out_string_format:   Takes (html link element to element page, search url, element dict object), and
                                 returns formatted output to be displayed per element in notification.
     :type  Function
     :param elmnts_out_file:     File path of elements output.
@@ -35,6 +44,8 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, o
     :param history_file:        File path for history of element urls.
     :type  String
     :param searches_file:       File path that specifies input url and names.
+    :type  String
+    :param log_file             File path that specifies log output
     :type  String
     :param max_pages:           Maximum number of pages to scrape per search.
     :type  int
@@ -51,6 +62,8 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, o
     """
 
     try:
+        logger = MyLogger().add_handler(level="DEBUG", filename=log_file).retrieve_logger()
+
         searches = i_o_setup(elmnts_out_file, history_file, searches_file)
         new_elmnts = get_ids(searches, elmnts_out_file, get_elmnts_func, get_attrs_func, get_next_url_func, max_pages,
                              json_request)
@@ -58,13 +71,16 @@ def scrape_site(get_elmnts_func, get_attrs_func, get_next_url_func, site_name, o
             alert_write_new(site_name, new_elmnts, searches, out_string_format,
                             push_notifications=push_notification, email_notifications=email_notification,
                             output_file=history_file, max_notif_entries=max_notifi_entries,
-                            pushover_token=pushover_token, pushover_key=pushover_key)
+                            pushover_token=pushover_token)
+        email_errors(None, None)
     except Exception:
-        traceback.print_exc()
-        # if email_exceptions:
-        #     notify.mail(email, 'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
-        # TODO: Create module that can be called to determine when (since how long?) to send error (aka propagate
-        # error to cronjob) on email.
+        try:
+            logger.error(traceback.print_exc())
+        except Exception:
+            print("Logger not functioning")
+
+        if email_exceptions:
+            email_errors(traceback.print_exc(), email)
 
 
 def write_with_timestamp(links, filename):
@@ -115,15 +131,8 @@ def i_o_setup(elements_file, history_file, search_file):
     if not Path(search_file).exists():
         raise Exception(f'Input file \'{search_file}\' does not exist.')
     
-    # Create directories if not existing
-    Path(elements_file).parents[0].mkdir(parents=True, exist_ok=True)
-    Path(history_file).parents[0].mkdir(parents=True, exist_ok=True)
-    Path(search_file).parents[0].mkdir(parents=True, exist_ok=True)
-
-    # Create files if not existing
-    Path(elements_file).touch(exist_ok=True)
-    Path(history_file).touch(exist_ok=True)
-    Path(search_file).touch(exist_ok=True)
+    # Create directories and files if not existing
+    create_files([elements_file, history_file, search_file])
 
     # Get search urls and search names from file
     search_dict = []
