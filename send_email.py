@@ -1,17 +1,27 @@
-import keyring
 import smtplib, ssl
-from os.path import basename
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-import os
+import platform
+if platform.platform() == 'Darwin':
+    import keyring
 
+PWD_PATH = ".gmail_pwd"
 
 def send_email(receiver_email, subject, text, *files, sender_email="landsverk.vegard@gmail.com",
                keychain_name="Gmail - epostskript (gcal)"):
     port = 465  # For SSL
     smtp_server = "smtp.gmail.com"
-    password = keyring.get_password(keychain_name, sender_email)
+
+    if platform.platform() == 'Darwin':
+        password = keyring.get_password(keychain_name, sender_email)
+    elif 'Linux' in platform.platform():
+        with open(PWD_PATH, "r") as file:
+            password = file.read()
+    else:
+        raise Exception("PasswordNotExists")
+
     message = MIMEMultipart()
     message["Subject"] = subject
     message["From"] = sender_email
@@ -26,18 +36,21 @@ def send_email(receiver_email, subject, text, *files, sender_email="landsverk.ve
 
     for f in files or []:
         f = os.path.expanduser(f)
-        with open(f, "rb") as fil:
-            part = MIMEApplication(
-                fil.read(),
-                Name=basename(f)
-            )
+        try:
+            with open(f, "rb") as fil:
+                part = MIMEApplication(
+                    fil.read(),
+                    Name=os.path.basename(f)
+                )
+        except FileNotFoundError as e:
+            raise FileNotFoundError("Invalid file specified.")
         # After the file is closed
-        part['Content-Disposition'] = 'attachment; filename="%s"' % basename(f)
+        part['Content-Disposition'] = 'attachment; filename="%s"' % os.path.basename(f)
         message.attach(part)
     
     # Create secure connection with server and send email
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.sendmail(
             sender_email, receiver_email, message.as_string()
@@ -50,4 +63,4 @@ if __name__ == '__main__':
 
 	Snakkas!"""
     sub = "Hilsen fra Mons"
-    send_email("webansvarlig@skienok.no", sub, text, '~/Downloads/unnamed.png')
+    send_email("webansvarlig@skienok.no", sub, text, '~/Downloads/Pipfile')
