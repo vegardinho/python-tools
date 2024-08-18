@@ -4,7 +4,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 import platform
-if platform.platform() == 'Darwin':
+os_syst = platform.system()
+if os_syst == 'Darwin':
     import keyring
 
 PWD_PATH = ".gmail_pwd"
@@ -14,9 +15,9 @@ def send_email(receiver_email, subject, text, *files, sender_email="landsverk.ve
     port = 465  # For SSL
     smtp_server = "smtp.gmail.com"
 
-    if platform.platform() == 'Darwin':
+    if os_syst == 'Darwin': # Macos
         password = keyring.get_password(keychain_name, sender_email)
-    elif 'Linux' in platform.platform():
+    elif os_syst == 'Linux':
         with open(PWD_PATH, "r") as file:
             password = file.read()
     else:
