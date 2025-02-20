@@ -7,12 +7,13 @@ NOW = TODAY.timestamp
 
 
 # Only keep files x days old
-def remove_old_files(path, exp_seconds, re_pattern=None):
+def remove_old_files(path, exp_days, re_pattern=None):
     """
     :param path:        Where to search for files.
-    :param exp_seconds: Seconds since creation to trigger deletion.
+    :param exp_days:    Days since creation to trigger deletion.
     :param re_pattern:     Optional. Pattern to match before deleting.
     """
+    exp_seconds = exp_days * 24 * 3600
 
     try:
         for f in os.listdir(path):
