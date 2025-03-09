@@ -110,7 +110,10 @@ class MyLogger:
 
         handler.setFormatter(MyLogger.FORMATTER)
         handler.setLevel(level)
-        self.logger.addHandler(handler)
+
+        # Check if the handler already exists
+        if not any(isinstance(h, type(handler)) for h in self.logger.handlers):
+            self.logger.addHandler(handler)
         return self
 
     def set_logger_level(self, new_level):
@@ -136,11 +139,26 @@ class MyLogger:
         return self.logger
 
 
+def default_logger(log_file=None, logger_base_level="DEBUG"):
+    """
+    Configure logging for the application.
+
+    :param log_file: Path to the log file.
+    :param logger_base_level: Base logging level.
+    :return: Configured logger instance.
+    """
+    logger = (
+        MyLogger(logger_base_level=logger_base_level)
+        .add_handler(level="INFO")
+        .add_handler(level="INFO", filename=log_file)
+        .retrieve_logger()
+    )
+    return logger
+
+
 # Test use case:
 if __name__ == "__main__":
-    log = (
-        MyLogger(logger_base_level="DEBUG").add_handler(level="DEBUG").retrieve_logger()
-    )
+    log = default_logger()
 
     log.debug("hei")
     log.info("hei")
