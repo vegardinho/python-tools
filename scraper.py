@@ -166,6 +166,7 @@ class Scraper(ABC):
         pushover_key: str = None,
         output_file: str = "history.txt",
         secret_file: str = "./input/secrets.yaml",
+        email_html: bool = True,
     ):
         """
         Write new elements to the alert and send notifications.
@@ -181,6 +182,7 @@ class Scraper(ABC):
         :param pushover_key: The Pushover user key.
         :param output_file: The output file path for the alert.
         :param secret_file: The secrets file path.
+        :param email_html: Whether to send the email as HTML.
         """
         self.logger.info("Starting alert_write_new function")
         subj = f"Nye treff på {site}-søket ditt"
@@ -237,7 +239,7 @@ class Scraper(ABC):
                 notify_text, pushover_token, pushover_key, secret_file
             )
         if email_notifications:
-            notify.mail(email, subj, notify_text)
+            notify.mail(email, subj, notify_text, html=email_html)
         if output_file:
             self.write_with_timestamp(archive_links, output_file)
         self.logger.info("Finished alert_write_new function")
@@ -357,7 +359,7 @@ class Scraper(ABC):
         """
         pass
 
-    def run_scraper(self):
+    def run_scraper(self, email_html: bool):
         """
         The wrapper function to run the scraper.
         """
@@ -392,6 +394,7 @@ class Scraper(ABC):
                 email=self.email,
                 output_file=self.history_file,
                 secret_file=self.secrets_file,
+                email_html=email_html,
             )
 
         self.logger.info("Finished main function")
