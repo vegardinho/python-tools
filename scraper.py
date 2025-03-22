@@ -279,21 +279,13 @@ class Scraper(ABC):
         """
         The main function to run the scraper with error handling.
         """
+        e = None
         try:
             self._run_scraper()
-            email_errors(
-                None,
-                self.email,
-                script=self.site_name,
-                history_file="./data/error_email.json",
-                log_file=self.log_file,
-                logger=self.logger,
-            )
         except Exception as e:
-            self.logger.error(f"An error occurred: {e}")
-            stack_trace = traceback.format_exc()
-            with open(self.log_file, "a") as log_fp:
-                log_fp.write(stack_trace)
+            e = e
+            self.logger(traceback.format_exc())
+        try:
             email_errors(
                 e,
                 self.email,
@@ -302,7 +294,9 @@ class Scraper(ABC):
                 log_file=self.log_file,
                 logger=self.logger,
             )
-            raise
+        except Exception as e:
+            self.logger.error(f"Error sending error email: {e}")
+            exit(-1)
 
     def _write_with_timestamp(self, links: str, filename: str):
         """
