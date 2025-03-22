@@ -69,6 +69,7 @@ def mail(recipient, subj, text, files=None, html=False):
         logger.info("Email sent successfully")
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
+        raise e
 
 
 if __name__ == "__main__":
