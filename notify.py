@@ -4,6 +4,11 @@ import urllib
 import send_email
 from my_logger import default_logger
 import yaml
+import platform
+
+os_syst = platform.system()
+if os_syst == "Darwin":
+    import keyring
 
 logger = default_logger()
 
@@ -60,13 +65,46 @@ def push_notification(
         logger.info("Pushover notification sent successfully")
 
 
-def mail(recipient, subj, text, files=None, html=False):
+# TODO: remove default values for sender_email and keychain_name
+
+
+def mail(
+    recipient,
+    subj,
+    text,
+    files=None,
+    html=False,
+    mail_pwd=None,
+    pwd_path=".gmail_pwd",
+    sender_email="landsverk.vegard@gmail.com",
+    keychain_name="Gmail - epostskript (gcal)",
+):
     logger.info("Starting mail function")
     if files is None:
         files = []
+
+    if mail_pwd:
+        password = mail_pwd
+    elif os_syst == "Darwin":  # Macos
+        password = keyring.get_password(keychain_name, sender_email)
+    elif os_syst == "Linux":
+        pwd_path = os.path.expanduser(pwd_path)  # Expand tilde if necessary
+        with open(pwd_path, "r") as file:
+            with open(pwd_path, "r") as file:
+                password = file.read()
+    else:
+        raise Exception("PasswordNotExists")
+
     try:
-        send_email.send_email(recipient, subj, text, *files, html=html)
-        logger.info("Email sent successfully")
+        send_email.send_email(
+            recipient,
+            subj,
+            text,
+            *files,
+            sender_email=sender_email,
+            password=password,
+            html=html,
+        )
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
         raise e

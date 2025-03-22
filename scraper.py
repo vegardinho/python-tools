@@ -64,6 +64,7 @@ class Scraper(ABC):
         pushover_user_key: Optional[str] = None,
         pushover_token: Optional[str] = None,
         email_notifications: bool = True,
+        email_pwd_file: str = None,
     ):
         self.site_name = site_name
         self.secrets_file = secrets_file
@@ -80,6 +81,7 @@ class Scraper(ABC):
         self.pushover_user_key = pushover_user_key
         self.pushover_token = pushover_token
         self.email_notifications = email_notifications
+        self.email_pwd_file = email_pwd_file
 
     def _is_valid_url(self, url: str) -> bool:
         """
@@ -241,7 +243,13 @@ class Scraper(ABC):
                 self.secrets_file,
             )
         if self.email_notifications:
-            notify.mail(self.email, subj, notify_text, html=self.email_html)
+            notify.mail(
+                self.email,
+                subj,
+                notify_text,
+                html=self.email_html,
+                pwd_path=self.email_pwd_file,
+            )
         if self.history_file:
             self._write_with_timestamp(archive_links, self.history_file)
         self.logger.info("Finished alert_write_new function")
@@ -378,12 +386,12 @@ class Scraper(ABC):
         self, element: Any, elmnts_dict: Dict[str, Any], search: Dict[str, str]
     ) -> Dict[str, Any]:
         """
-        Extract attributes from an element.
+        Extract attributes from an element. Beware: must include certain elements (see "return" below).
 
         :param element: The element to extract attributes from.
         :param elmnts_dict: The dictionary to store attributes.
         :param search: The search parameters.
-        :return: The updated attributes dictionary with
+        :return: The updated attributes dictionary with at least
         {"title": String, "search": {"name": String, "visit_url": String, "search_url": String.}
         """
         pass
@@ -415,6 +423,10 @@ class Scraper(ABC):
 
 
 class SiteChangedScraper(Scraper):
+    """
+    A subclass of Scraper that checks whether html for a site has changed.
+    """
+
     def _get_elements(self, page: BeautifulSoup) -> List[Dict[str, Any]]:
         """
         Extract elements from a page. For this scraper, we will just return the entire page content.
@@ -428,7 +440,7 @@ class SiteChangedScraper(Scraper):
         self, element: Any, elmnts_dict: Dict[str, Any], search: Dict[str, str]
     ) -> Dict[str, Any]:
         """
-        Extract attributes from an element. Ensure all elements have a "search" key with required values and a "title".
+        Extract attributes from an element.
 
         :param element: The element to extract attributes from.
         :param elmnts_dict: The dictionary to store attributes.

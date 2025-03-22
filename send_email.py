@@ -1,13 +1,9 @@
-import smtplib, ssl
+import smtplib
+import ssl
 import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-import platform
-
-os_syst = platform.system()
-if os_syst == "Darwin":
-    import keyring
 
 
 def send_email(
@@ -15,22 +11,13 @@ def send_email(
     subject,
     text,
     *files,
-    sender_email="landsverk.vegard@gmail.com",
-    keychain_name="Gmail - epostskript (gcal)",
-    pwd_path=".gmail_pwd",
+    sender_email,
+    password,
     html=False,
 ):
     port = 465  # For SSL
     smtp_server = "smtp.gmail.com"
     size_limit = 25 * 1024 * 1024  # 25MB in bytes
-
-    if os_syst == "Darwin":  # Macos
-        password = keyring.get_password(keychain_name, sender_email)
-    elif os_syst == "Linux":
-        with open(pwd_path, "r") as file:
-            password = file.read()
-    else:
-        raise Exception("PasswordNotExists")
 
     message = MIMEMultipart()
     message["Subject"] = subject
