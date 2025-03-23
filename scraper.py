@@ -51,11 +51,11 @@ class Scraper(ABC):
         self,
         site_name: str,
         secrets_file: str,
-        log_file: str,
         elements_out_file: str,
         history_file: str,
         searches_file: str,
         email: str,
+        log_file: str = None,
         max_notif_entries: int = 4,
         email_html: bool = True,
         logger: logging.Logger = logging.getLogger(__name__),
@@ -65,7 +65,9 @@ class Scraper(ABC):
         pushover_token: Optional[str] = None,
         email_notifications: bool = True,
         email_pwd_file: str = None,
+        include_changes: bool = True,
     ):
+        #TODO Extract log file from logger, and send these in error email
         self.site_name = site_name
         self.secrets_file = secrets_file
         self.log_file = log_file
@@ -82,6 +84,7 @@ class Scraper(ABC):
         self.pushover_token = pushover_token
         self.email_notifications = email_notifications
         self.email_pwd_file = email_pwd_file
+        self.include_changes = include_changes
 
     def _is_valid_url(self, url: str) -> bool:
         """
@@ -120,16 +123,27 @@ class Scraper(ABC):
         with open(self.elements_out_file, "w+") as fp:
             json.dump(cur_elements, fp)
 
-        if len(cur_elements.keys() - prev_elements.keys()) > 0:
-            new = {}
-            for element_id, element in cur_elements.items():
-                if element_id not in prev_elements:
-                    new[element_id] = element
-            self.logger.info(f"Found {len(new)} new elements")
-            return list(new.values())
+        new = []
+        for key in cur_elements:
+            add = False
+            # Add changed elements if self.include_changes is True
+            if self.include_changes and cur_elements.get(key) != prev_elements.get(key): 
+                add = True
+            if key not in prev_elements:
+                add = True
+            if add:
+                new.append(cur_elements.get(key))
+        
+        self.logger.debug(f"Previous elements: {prev_elements}")
+        self.logger.debug(f"Current elements: {cur_elements}")
 
-        self.logger.info("No new elements found")
-        return None
+        if len(new) == 0:
+            self.logger.info("No new elements found")
+            return None
+
+        self.logger.info(f"Found {len(new)} new elements")
+        return new
+
 
     def _i_o_setup(self) -> List[Dict[str, str]]:
         """
@@ -151,8 +165,8 @@ class Scraper(ABC):
         for search in search_data.get("searches", []):
             search_url = search.get("search_url")
             display_url = search.get(
-                "display_url", None
-            )  # Set to None if display_url is not provided
+                "display_url", search_url
+            )  # Set to search_url if display_url is not provided
             search_title = search.get("title")
             if not self._is_valid_url(search_url) or not self._is_valid_url(
                 display_url
@@ -190,11 +204,11 @@ class Scraper(ABC):
         for i in range(0, len(elements)):
             element = elements[i]
             if "href" in element:
-                archive_links += "\n– {}\n".format(element["href"])
-                element_url = pyshorteners.Shortener().tinyurl.short(element["href"])
+                url = element["href"]
             else:
-                archive_links += "\n– [No element url]\n"
-                element_url = "[No element url]"
+                url = element["search"]["visit_url"]
+            archive_links += "\n– {}".format(url)
+            element_url = pyshorteners.Shortener().tinyurl.short(url)
             if i >= self.max_notif_entries:
                 continue
 
@@ -292,7 +306,7 @@ class Scraper(ABC):
             self._run_scraper()
         except Exception as e:
             e = e
-            self.logger(traceback.format_exc())
+            self.logger.error(traceback.format_exc())
         try:
             email_errors(
                 e,

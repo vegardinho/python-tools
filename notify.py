@@ -5,13 +5,13 @@ import send_email
 from my_logger import default_logger
 import yaml
 import platform
+import logging
 
 os_syst = platform.system()
 if os_syst == "Darwin":
     import keyring
 
-logger = default_logger()
-
+logger = logging.getLogger(__name__)
 
 class PushoverKeysNotFound(Exception):
     pass

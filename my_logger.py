@@ -74,12 +74,14 @@ class MyLogger:
 
     def add_handler(
         self,
-        level="NOTSET",
+        level=None,
         filename=None,
+        write_to_file=False,
         overwrite=False,
         rollover_interval=7,
         rollover_type="D",
         max_log_files=10,
+        log_dir=None
     ):
         """
         Add a handler for logging to std.out or file. If file handler, batch store log files by week.
@@ -92,7 +94,11 @@ class MyLogger:
         :param max_log_files: Maximum number of log files to keep.
         :return: MyLogger object.
         """
-        if filename:
+        level = level if level else self.logger_level
+        if write_to_file or filename or log_dir:
+            if log_dir: # Remove trailing slash
+                log_dir = log_dir[:-1] if log_dir[-1] == "/" else log_dir
+            filename = filename if filename else f"{log_dir}/{level}.log"
             create_files(filename)
             if overwrite:
                 handler = logging.FileHandler(mode="w", filename=filename)
@@ -111,9 +117,11 @@ class MyLogger:
         handler.setFormatter(MyLogger.FORMATTER)
         handler.setLevel(level)
 
-        # Check if the handler already exists
-        if not any(isinstance(h, type(handler)) for h in self.logger.handlers):
+        # Only add handler if it is not already added
+        if not any(h.baseFilename == handler.baseFilename for h in self.logger.handlers if hasattr(h, 'baseFilename')):
             self.logger.addHandler(handler)
+        else:
+            print(f"Handler with filename {handler.baseFilename} already added.")
         return self
 
     def set_logger_level(self, new_level):
@@ -139,7 +147,7 @@ class MyLogger:
         return self.logger
 
 
-def default_logger(log_file=None, logger_base_level="DEBUG"):
+def default_logger(log_dir="."):
     """
     Configure logging for the application.
 
@@ -148,9 +156,10 @@ def default_logger(log_file=None, logger_base_level="DEBUG"):
     :return: Configured logger instance.
     """
     logger = (
-        MyLogger(logger_base_level=logger_base_level)
+        MyLogger()
         .add_handler(level="INFO")
-        .add_handler(level="INFO", filename=log_file)
+        .add_handler(level="DEBUG", write_to_file=True, log_dir=log_dir)
+        .add_handler(level="INFO", write_to_file=True, log_dir=log_dir)
         .retrieve_logger()
     )
     return logger
