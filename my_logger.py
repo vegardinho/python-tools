@@ -80,7 +80,7 @@ class MyLogger:
         overwrite=False,
         rollover_interval=7,
         rollover_type="D",
-        max_log_files=10,
+        max_log_files=7,
         log_dir=None
     ):
         """
