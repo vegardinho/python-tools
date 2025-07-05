@@ -13,6 +13,7 @@ if os_syst == "Darwin":
 
 logger = logging.getLogger(__name__)
 
+
 class PushoverKeysNotFound(Exception):
     pass
 
@@ -65,33 +66,26 @@ def push_notification(
         logger.info("Pushover notification sent successfully")
 
 
-# TODO: remove default values for sender_email and keychain_name
-
-
 def mail(
     recipient,
     subj,
     text,
+    sender_email,
     files=None,
     html=False,
-    mail_pwd=None,
-    pwd_path=".gmail_pwd",
-    sender_email="landsverk.vegard@gmail.com",
-    keychain_name="Gmail - epostskript (gcal)",
+    pwd_file=None,
+    keychain_name=None,
 ):
     logger.info("Starting mail function")
     if files is None:
         files = []
 
-    if mail_pwd:
-        password = mail_pwd
+    if pwd_file:
+        pwd_file = os.path.expanduser(pwd_file)
+        with open(pwd_file, "r") as file:
+            password = file.read()
     elif os_syst == "Darwin":  # Macos
         password = keyring.get_password(keychain_name, sender_email)
-    elif os_syst == "Linux":
-        pwd_path = os.path.expanduser(pwd_path)  # Expand tilde if necessary
-        with open(pwd_path, "r") as file:
-            with open(pwd_path, "r") as file:
-                password = file.read()
     else:
         raise Exception("PasswordNotExists")
 
@@ -112,4 +106,12 @@ def mail(
 
 if __name__ == "__main__":
     text = 'Test med html:\n<a href="http://example.com/">word</a>'
-    push_notification(text, secrets_file="./input/secrets.yaml")
+    # push_notification(text, secrets_file="./input/secrets.yaml")
+    mail(
+        "landsverk.vegard@gmail.com",
+        "Test email",
+        text,
+        "landsverk.vegard@gmail.com",
+        html=True,
+        pwd_file=".email_pwd",
+    )

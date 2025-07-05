@@ -261,7 +261,7 @@ class Scraper(ABC):
                 subj,
                 notify_text,
                 html=self.email_html,
-                pwd_path=self.email_pwd_file,
+                pwd_file=self.email_pwd_file,
             )
         if self.history_file:
             self._write_with_timestamp(archive_links, self.history_file)
