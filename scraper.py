@@ -67,7 +67,7 @@ class Scraper(ABC):
         email_pwd_file: str = None,
         include_changes: bool = True,
     ):
-        #TODO Extract log file from logger, and send these in error email
+        # TODO Extract log file from logger, and send these in error email
         self.site_name = site_name
         self.secrets_file = secrets_file
         self.log_file = log_file
@@ -127,13 +127,13 @@ class Scraper(ABC):
         for key in cur_elements:
             add = False
             # Add changed elements if self.include_changes is True
-            if self.include_changes and cur_elements.get(key) != prev_elements.get(key): 
+            if self.include_changes and cur_elements.get(key) != prev_elements.get(key):
                 add = True
             if key not in prev_elements:
                 add = True
             if add:
                 new.append(cur_elements.get(key))
-        
+
         self.logger.debug(f"Previous elements: {prev_elements}")
         self.logger.debug(f"Current elements: {cur_elements}")
 
@@ -143,7 +143,6 @@ class Scraper(ABC):
 
         self.logger.info(f"Found {len(new)} new elements")
         return new
-
 
     def _i_o_setup(self) -> List[Dict[str, str]]:
         """
@@ -521,3 +520,19 @@ class SiteChangedScraper(Scraper):
             )
 
         self.logger.info("Finished site change check function")
+
+
+class SiteTextChangedScraper(SiteChangedScraper):
+    """
+    A subclass of SiteTextChangedScraper that checks if text has changed on a site.
+    """
+
+    def _get_elements(self, page: BeautifulSoup) -> List[Dict[str, str]]:
+        """
+        Extract elements from a page. For this scraper, we will return the text on a site.
+        Useful to avoid triggering notification because of dynamically changing html content.
+
+        :param page: The page to extract elements from.
+        :return: A list containing the page content.
+        """
+        return [{"content": page.text}]
