@@ -85,7 +85,10 @@ def mail(
         with open(pwd_file, "r") as file:
             password = file.read()
     elif os_syst == "Darwin":  # Macos
-        password = keyring.get_password(keychain_name, sender_email)
+        try:
+            password = keyring.get_password(keychain_name, sender_email)
+        except Exception as e:
+                logger.error(f"Failed to retrieve password from keyring: {e}")
     else:
         raise Exception("PasswordNotExists")
 
