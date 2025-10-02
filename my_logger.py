@@ -3,8 +3,54 @@ from logging import Formatter
 import sys
 from copy import copy
 from logging.handlers import TimedRotatingFileHandler
+from datetime import datetime
+import os
 
 from i_o_utilities import create_files
+
+
+class TimestampedTimedRotatingFileHandler(TimedRotatingFileHandler):
+    """
+    A custom TimedRotatingFileHandler that adds timestamps to the base filename
+    when the file is first written to.
+    """
+
+    def __init__(
+        self,
+        filename,
+        when="h",
+        interval=1,
+        backupCount=0,
+        encoding=None,
+        delay=False,
+        utc=False,
+        atTime=None,
+    ):
+        self._original_filename = filename
+        self._timestamp_added = False
+        super().__init__(
+            filename, when, interval, backupCount, encoding, delay, utc, atTime
+        )
+
+    def emit(self, record):
+        """
+        Add timestamp to filename on first write.
+        """
+        if not self._timestamp_added:
+            self._add_timestamp_to_filename()
+            self._timestamp_added = True
+        super().emit(record)
+
+    def _add_timestamp_to_filename(self):
+        """
+        Add timestamp to the base filename.
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        base_name, ext = os.path.splitext(self._original_filename)
+        new_filename = f"{base_name}_{timestamp}{ext}"
+
+        # Update the handler's filename
+        self.baseFilename = os.path.abspath(new_filename)
 
 
 class ColoredFormatter(Formatter):
@@ -81,7 +127,8 @@ class MyLogger:
         rollover_interval=7,
         rollover_type="D",
         max_log_files=7,
-        log_dir=None
+        log_dir=None,
+        timestamp=False,
     ):
         """
         Add a handler for logging to std.out or file. If file handler, batch store log files by week.
@@ -92,25 +139,36 @@ class MyLogger:
         :param rollover_interval: Number of days between log rotations.
         :param rollover_type: Type of rollover interval (e.g., 'D' for days, 'S' for seconds). Defaults to days.
         :param max_log_files: Maximum number of log files to keep.
+        :param timestamp: Whether to add timestamp to filename when first written to.
         :return: MyLogger object.
         """
         level = level if level else self.logger_level
         if write_to_file or filename or log_dir:
-            if log_dir: # Remove trailing slash
+            if log_dir:  # Remove trailing slash
                 log_dir = log_dir[:-1] if log_dir[-1] == "/" else log_dir
-            filename = filename if filename else f"{log_dir}/{level}.log"
+            filename = (
+                filename if filename else f"{log_dir}/{logging.getLevelName(level)}.log"
+            )
             create_files(filename)
             if overwrite:
                 handler = logging.FileHandler(mode="w", filename=filename)
             else:
                 if rollover_interval == 7:
                     rollover_type = "W0"  # Reset weekly log files on Monday
-                handler = TimedRotatingFileHandler(
-                    filename,
-                    when=rollover_type,
-                    interval=rollover_interval,
-                    backupCount=max_log_files,
-                )
+                if timestamp:
+                    handler = TimestampedTimedRotatingFileHandler(
+                        filename,
+                        when=rollover_type,
+                        interval=rollover_interval,
+                        backupCount=max_log_files,
+                    )
+                else:
+                    handler = TimedRotatingFileHandler(
+                        filename,
+                        when=rollover_type,
+                        interval=rollover_interval,
+                        backupCount=max_log_files,
+                    )
         else:
             handler = logging.StreamHandler(sys.stdout)
 
@@ -118,7 +176,11 @@ class MyLogger:
         handler.setLevel(level)
 
         # Only add handler if it is not already added
-        if not any(h.baseFilename == handler.baseFilename for h in self.logger.handlers if hasattr(h, 'baseFilename')):
+        if not any(
+            h.baseFilename == handler.baseFilename
+            for h in self.logger.handlers
+            if hasattr(h, "baseFilename")
+        ):
             self.logger.addHandler(handler)
         else:
             print(f"Handler with filename {handler.baseFilename} already added.")
@@ -147,19 +209,23 @@ class MyLogger:
         return self.logger
 
 
-def default_logger(log_dir="."):
+def default_logger(log_dir=".", timestamp=False):
     """
     Configure logging for the application.
 
-    :param log_file: Path to the log file.
-    :param logger_base_level: Base logging level.
+    :param log_dir: Directory for log files.
+    :param timestamp: Whether to add timestamps to log filenames.
     :return: Configured logger instance.
     """
     logger = (
         MyLogger()
         .add_handler(level="INFO")
-        .add_handler(level="DEBUG", write_to_file=True, log_dir=log_dir)
-        .add_handler(level="INFO", write_to_file=True, log_dir=log_dir)
+        .add_handler(
+            level="DEBUG", write_to_file=True, log_dir=log_dir, timestamp=timestamp
+        )
+        .add_handler(
+            level="INFO", write_to_file=True, log_dir=log_dir, timestamp=timestamp
+        )
         .retrieve_logger()
     )
     return logger
