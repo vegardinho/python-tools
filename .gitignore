@@ -1,3 +1,9 @@
 send.history
 .secrets
 .email_pwd
+*.egg-info/
+build/
+.venv/
+__pycache__/
+.pytest_cache/
+.idea/

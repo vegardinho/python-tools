@@ -6,7 +6,9 @@ from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 import os
 
-from i_o_utilities import create_files
+from python_tools.i_o_utilities import create_files
+
+__all__ = ["MyLogger", "default_logger"]
 
 
 class TimestampedTimedRotatingFileHandler(TimedRotatingFileHandler):
@@ -142,7 +144,10 @@ class MyLogger:
         :param timestamp: Whether to add timestamp to filename when first written to.
         :return: MyLogger object.
         """
-        level = level if level else self.logger_level
+        if isinstance(level, str):
+            level = getattr(logging, level)
+        else:
+            level = level if level is not None else self.logger_level
         if write_to_file or filename or log_dir:
             if log_dir:  # Remove trailing slash
                 log_dir = log_dir[:-1] if log_dir[-1] == "/" else log_dir
@@ -176,11 +181,12 @@ class MyLogger:
         handler.setLevel(level)
 
         # Only add handler if it is not already added
-        if not any(
-            h.baseFilename == handler.baseFilename
+        existing_filenames = {
+            h.baseFilename
             for h in self.logger.handlers
             if hasattr(h, "baseFilename")
-        ):
+        }
+        if not hasattr(handler, "baseFilename") or handler.baseFilename not in existing_filenames:
             self.logger.addHandler(handler)
         else:
             print(f"Handler with filename {handler.baseFilename} already added.")

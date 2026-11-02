@@ -2,6 +2,47 @@
 
 A collection of custom handy tools for python.
 
+The reusable modules are provided under the `python_tools` package namespace:
+
+```python
+from python_tools.email_errors import email_errors
+from python_tools.my_logger import MyLogger
+from python_tools.notify import PasswordNotExists
+```
+
+The supported public modules and symbols are explicitly listed in each
+module's `__all__`. The SMTP transport is internal (`python_tools._send_email`)
+and should be accessed through `python_tools.notify.mail`.
+
+## Testing
+
+The tests are in `tests/` and use `pytest`. This project uses
+[uv](https://docs.astral.sh/uv/) for dependency and environment management.
+Set up the environment and run the tests with:
+
+```sh
+uv sync
+uv run pytest -q
+```
+
+The suite tests:
+
+- file creation and age/pattern-based file removal
+- logger formatting, handler setup, file output, and timestamped rotation
+- SMTP message creation, HTML content, attachments, and missing files
+- Pushover credential validation and HTTP requests
+- email password lookup and delegation
+- error-history reset and throttled failure recording
+- basic scraper URL validation
+
+Scraper tests are skipped when the optional scraper dependencies are not
+installed. Enable them with:
+
+```sh
+uv sync --extra scraper
+uv run pytest -q
+```
+
 ## Contents
 
 - [My Logger (my_logger.py)](#my-logger-my_loggerpy)

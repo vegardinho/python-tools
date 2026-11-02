@@ -1,8 +1,8 @@
 import os
 import http.client
 import urllib
-import send_email
-from my_logger import default_logger
+from python_tools import _send_email
+from python_tools.my_logger import default_logger
 import yaml
 import platform
 import logging
@@ -13,12 +13,23 @@ if os_syst == "Darwin":
 
 logger = logging.getLogger(__name__)
 
+__all__ = [
+    "mail",
+    "push_notification",
+    "PushoverKeysNotFound",
+    "PushoverNotificationFailed",
+    "PasswordNotExists",
+]
+
 
 class PushoverKeysNotFound(Exception):
     pass
 
 
 class PushoverNotificationFailed(Exception):
+    pass
+
+class PasswordNotExists(Exception):
     pass
 
 
@@ -73,15 +84,15 @@ def mail(
     sender_email,
     files=None,
     html=False,
-    pwd_file=None,
+    pwd_file='./.email_pwd',
     keychain_name=None,
 ):
     logger.info("Starting mail function")
     if files is None:
         files = []
 
-    if pwd_file:
-        pwd_file = os.path.expanduser(pwd_file)
+    pwd_file = os.path.expanduser(pwd_file)
+    if os.path.exists(pwd_file):
         with open(pwd_file, "r") as file:
             password = file.read()
     elif os_syst == "Darwin":  # Macos
@@ -90,10 +101,10 @@ def mail(
         except Exception as e:
                 logger.error(f"Failed to retrieve password from keyring: {e}")
     else:
-        raise Exception("PasswordNotExists")
+        raise PasswordNotExists("Password for email sending not found. Please add password file or use MacOS keychain")
 
     try:
-        send_email.send_email(
+        _send_email.send_email(
             recipient,
             subj,
             text,

@@ -1,16 +1,19 @@
 import json
 import arrow
-import notify
+from python_tools import notify
 import os
-from my_logger import default_logger
+import socket
+from python_tools.my_logger import default_logger
 
-from i_o_utilities import create_files
+from python_tools.i_o_utilities import create_files
 
 # First direct error email, then error summary at the end of the day
 # Then error summary on day 3, then day 7 etc.
 
 SEND_INTERVALS = [0, 1, 2, 4, 7, 15]
 NOW = arrow.now()
+
+__all__ = ["email_errors", "NoInternetError"]
 
 class NoInternetError(OSError):
     """Raised when there is no internet connection."""
@@ -24,8 +27,12 @@ def email_errors(
     logger=None,
     log_file=None,
 ):
-    log_file_path = [os.path.abspath(log_file)] if log_file else []
-    log = logger or default_logger(log_file=log_file)
+    log_file_path = []
+    if log_file:
+        abs_log_file = os.path.abspath(log_file)
+        if os.path.exists(abs_log_file):
+            log_file_path = [abs_log_file]
+    log = logger or default_logger(log_dir=".")
 
     create_files(history_file)
 
@@ -62,7 +69,7 @@ def email_errors(
                 if num_sent < len(SEND_INTERVALS):
                     next_send_limit = SEND_INTERVALS[num_sent]
 
-                if has_internet():
+                if not has_internet():
                     raise NoInternetError(
                         "No internet connection."
                     )
@@ -78,7 +85,11 @@ def email_errors(
                             f"Feilmelding: {exception}"
                         )
                         notify.mail(
-                            email, "Feil under kjøring av skript", body, log_file_path
+                            email,
+                            "Feil under kjøring av skript",
+                            body,
+                            sender_email=email,
+                            files=log_file_path,
                         )
                         log.info("Email sent. Appending to list.")
                         dates["error_sent"].append(NOW.format())
@@ -109,8 +120,8 @@ def has_internet(host="1.1.1.1", port=53, timeout=2):
     Checks internet connectivity by attempting to connect to a public DNS server (Cloudflare).
     """
     try:
-        socket.setdefaulttimeout(timeout)
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        with socket.create_connection((host, port), timeout=timeout):
+            pass
         return True
     except socket.error:
         return False

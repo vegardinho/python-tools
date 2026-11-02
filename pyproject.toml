@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-tools"
+version = "0.1.0"
+description = "Reusable personal Python utilities."
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "arrow",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+scraper = [
+    "beautifulsoup4",
+    "mechanicalsoup",
+    "pyshorteners",
+    "requests",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["python_tools*"]

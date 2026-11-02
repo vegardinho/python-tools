@@ -1,6 +1,6 @@
 import json
 import pyshorteners
-import notify
+from python_tools import notify
 import arrow
 import mechanicalsoup as ms
 import requests
@@ -12,10 +12,12 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
 import yaml
-from email_errors import email_errors
+from python_tools.email_errors import email_errors
 import traceback
 
-from i_o_utilities import create_files
+from python_tools.i_o_utilities import create_files
+
+__all__ = ["Scraper", "SiteChangedScraper", "SiteTextChangedScraper"]
 
 DEFAULT_HISTORY_FILE = "./logs/history.txt"
 DEFAULT_SEARCHES_FILE = "./input/searches.yaml"
@@ -24,7 +26,9 @@ DEFAULT_LOG_FILE = "./logs/all.log"
 
 HEADERS = {
     "accept": "*/*",
-    "accept-encoding": "gzip, deflate, br, zstd",
+    # Requests reliably decodes gzip and deflate. Avoid advertising codecs
+    # that may be returned as compressed bytes when optional decoders are absent.
+    "accept-encoding": "gzip, deflate",
     "accept-language": "nb,no;q=0.9,en;q=0.8,es;q=0.7",
     "dnt": "1",
     "if-none-match": '"46:1:1:349:20250219144056747"',
@@ -197,7 +201,11 @@ class Scraper(ABC):
         """
         self.logger.info("Starting alert_write_new function")
         subj = f"Nye treff på {self.site_name}-søket ditt"
-        notify_text = f"Det er blitt lagt til {len(elements)} nye annonse(r) på {self.site_name}-søket ditt.\n\n"
+        line_break = "<br>" if self.email_html else "\n"
+        notify_text = (
+            f"Det er blitt lagt til {len(elements)} nye annonse(r) på "
+            f"{self.site_name}-søket ditt.{line_break}{line_break}"
+        )
 
         archive_links = ""
         for i in range(0, len(elements)):
@@ -220,12 +228,14 @@ class Scraper(ABC):
             )
 
             notify_text += (
-                f"\n{self._ad_string_format(element_link, search_link, element)}\n"
+                f"{line_break}{self._ad_string_format(element_link, search_link, element)}"
+                f"{line_break}"
             )
 
         if len(elements) > self.max_notif_entries:
             notify_text += (
-                f"\n... og {len(elements) - self.max_notif_entries} annonse(r) til.\n"
+                f"{line_break}... og {len(elements) - self.max_notif_entries} annonse(r) til."
+                f"{line_break}"
             )
 
         short_urls = [
@@ -235,12 +245,12 @@ class Scraper(ABC):
             ]
             for search in searches
         ]
-        notify_text += "\n\nLenke til søk:\n"
+        notify_text += f"{line_break}{line_break}Lenke til søk:{line_break}"
 
         for url, name in short_urls:
-            notify_text += f"<a href=\"{url}\">'{name}'</a>\n"
+            notify_text += f"<a href=\"{url}\">'{name}'</a>{line_break}"
 
-        notify_text += f"\nVennlig hilsen,\n{self.site_name}-roboten"
+        notify_text += f"{line_break}Vennlig hilsen,{line_break}{self.site_name}-roboten"
 
         if self.pushover_notifications:
             if (
@@ -260,6 +270,7 @@ class Scraper(ABC):
                 self.email,
                 subj,
                 notify_text,
+                sender_email=self.email,
                 html=self.email_html,
                 pwd_file=self.email_pwd_file,
             )
@@ -300,23 +311,23 @@ class Scraper(ABC):
         """
         The main function to run the scraper with error handling.
         """
-        e = None
+        err = None
         try:
             self._run_scraper()
-        except Exception as e:
-            e = e
+        except Exception as exc:
+            err = exc
             self.logger.error(traceback.format_exc())
         try:
             email_errors(
-                e,
+                err,
                 self.email,
                 script=self.site_name,
                 history_file="./data/error_email.json",
                 log_file=self.log_file,
                 logger=self.logger,
             )
-        except Exception as e:
-            self.logger.error(f"Error sending error email: {e}")
+        except Exception as exc:
+            self.logger.error(f"Error sending error email: {exc}")
             exit(-1)
 
     def _write_with_timestamp(self, links: str, filename: str):
