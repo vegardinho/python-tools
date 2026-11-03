@@ -26,6 +26,7 @@ def email_errors(
     history_file="error_email.json",
     logger=None,
     log_file=None,
+    pwd_file=None,
 ):
     log_file_path = []
     if log_file:
@@ -44,13 +45,11 @@ def email_errors(
             days_since_send = 0
 
             if fp_content == "":
-                log.info(
-                    "Empty history file --> assume never sent error message. Create dict."
-                )
+                log.info("History file is empty; initializing error and email history.")
                 dates = {"error": [], "error_sent": []}
                 log.debug(dates)
             else:
-                log.info("Non-empty file with history of sending and errors")
+                log.info("Reading existing error and email history.")
                 dates = json.loads(fp_content)
                 if dates["error_sent"]:
                     last_send_date = arrow.get(dates["error_sent"][-1])
@@ -60,6 +59,7 @@ def email_errors(
                 log.info("No exception provided, resetting error log.")
                 dates = {"error": [], "error_sent": []}
             else:
+                log.info("Exception provided, logging error and checking if email should be sent.")
                 dates["error"].append(NOW.format())
 
                 next_send_limit = SEND_INTERVALS[
@@ -84,12 +84,17 @@ def email_errors(
                             f"Antall feilkjøringer siden nullstilling: {len(dates['error'])}.\n\n"
                             f"Feilmelding: {exception}"
                         )
+                        mail_kwargs = {
+                            "sender_email": email,
+                            "files": log_file_path,
+                        }
+                        if pwd_file is not None:
+                            mail_kwargs["pwd_file"] = pwd_file
                         notify.mail(
                             email,
                             "Feil under kjøring av skript",
                             body,
-                            sender_email=email,
-                            files=log_file_path,
+                            **mail_kwargs,
                         )
                         log.info("Email sent. Appending to list.")
                         dates["error_sent"].append(NOW.format())
@@ -100,6 +105,10 @@ def email_errors(
                         exit(1)
                 else:
                     log.warning("Limit not exceed for new error email. Skipping send.")
+                    days_until_next_send = next_send_limit - days_since_send
+                    log.warning(
+                        f"Next error email will be sent in {days_until_next_send} day(s)."
+                    )
 
             fp.seek(0)
             fp.truncate()  # Truncate the file to remove any leftover data
